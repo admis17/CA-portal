@@ -11,7 +11,7 @@ Phases 3–6 built, lint+build pass, full demo round-trips tested (assign → no
 
 ## Current Status
 Phases 1–2 pushed to https://github.com/admis17/CA-portal.git (`main`, commit `d05afa1`).
-Phases 3–6 complete locally, tested — pushing now; leftovers recorded under Deferred.
+Phases 3–6 pushed as commit `1b768f0`. Leftovers recorded under Deferred; tree clean.
 
 ## Completed (Phase 2)
 - `createRequest` action (`src/lib/actions/requests.ts`): service/note/files validation (25 MB, PDF/img/xls/doc/csv), real branch writes request + storage objects + document rows via service role, notifies admins + audit log (best-effort); demo branch stores bytes + item.
