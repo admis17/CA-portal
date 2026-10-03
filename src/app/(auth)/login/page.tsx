@@ -52,10 +52,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>Sign in to access your portal.</p>
           <Banner />
           {sp.error && <p className="pill mb-4" style={{ background: "#FEF2F2", color: "#DC2626" }}><span className="d" />{sp.error}</p>}
+          {sp.ok && <p className="pill mb-4" style={{ background: "#F0FDF4", color: "#16A34A" }}><span className="d" />{sp.ok}</p>}
           {sp.notice && <p className="pill mb-4" style={{ background: "#FFFBEB", color: "#D97706" }}><span className="d" />{sp.notice}</p>}
           <form action={signIn} className="flex flex-col gap-4">
             <div><label className="lbl" htmlFor="username">Username</label><input id="username" name="username" className="input" autoComplete="username" required minLength={3} placeholder="e.g. priya.sharma" /></div>
             <div><label className="lbl" htmlFor="password">Password</label><input id="password" name="password" type="password" className="input" autoComplete="current-password" required placeholder="••••••••" /></div>
+            <div className="flex justify-end"><Link href="/forgot-password" className="text-xs font-bold" style={{ color: brand.colors.primary }}>Forgot password?</Link></div>
             <button className="btn-primary w-full !h-11" type="submit">Sign In to Secure Portal</button>
           </form>
           <p className="text-sm mt-5 text-center" style={{ color: "var(--muted)" }}>

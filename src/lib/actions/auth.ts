@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { randomInt } from "crypto";
 import { z } from "zod";
 import { homeForRole } from "@/config/brand";
 import { createClient, envConfigured } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { mailTemplates, sendEmail } from "@/lib/email";
 
 // DEMO ONLY: hardcoded logins that work solely when Supabase env is absent.
 // The moment env vars are set, every branch below is skipped. Never use in prod.
@@ -33,6 +35,7 @@ const employeeSchema = z.object({
   full_name: z.string().min(2).max(100),
   username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9._-]+$/, "letters, numbers, . _ - only"),
   password: z.string().min(8).max(100),
+  email: z.string().email().optional().or(z.literal("")),
 });
 
 async function callerIsAdmin() {
@@ -134,7 +137,8 @@ export async function createEmployee(formData: FormData) {
   demoGuard();
   if (!(await callerIsAdmin())) redirect("/login");
   const parsed = employeeSchema.safeParse({
-    full_name: formData.get("full_name"), username: formData.get("username"), password: formData.get("password"),
+    full_name: formData.get("full_name"), username: formData.get("username"),
+    password: formData.get("password"), email: formData.get("email"),
   });
   if (!parsed.success) redirect("/admin/employees?error=Check%20name%2C%20username%20and%20password%20(min%208%20chars).");
   const username = parsed.data.username.toLowerCase();
@@ -146,6 +150,7 @@ export async function createEmployee(formData: FormData) {
   const { error: pErr } = await admin.from("profiles").insert({
     id: data.user.id, role: "employee", username,
     full_name: parsed.data.full_name, must_change_password: true,
+    email: parsed.data.email || null,
   });
   if (pErr) {
     await admin.auth.admin.deleteUser(data.user.id);
@@ -170,8 +175,7 @@ export async function resetEmployeePassword(formData: FormData) {
   demoGuard();
   if (!(await callerIsAdmin())) redirect("/login");
   const id = String(formData.get("id") ?? "");
-  // ponytail: Math.random temp password; replace with crypto when emailed in Phase 6
-  const temp = `Temp${Math.floor(100000 + Math.random() * 900000)}!`;
+  const temp = `Temp${randomInt(100000, 1000000)}!`;
   const admin = createAdminClient();
   const { error } = await admin.auth.admin.updateUserById(id, { password: temp });
   if (error) redirect(`/admin/employees?error=${encodeURIComponent(error.message)}`);
@@ -205,4 +209,57 @@ export async function updateOwnPassword(formData: FormData) {
   await admin.from("profiles").update({ must_change_password: false }).eq("id", data.user.id);
   const { data: p } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
   redirect(homeForRole[(p as { role?: "admin" | "employee" | "client" } | null)?.role ?? "client"]);
+}
+
+// Forgot password: username → recovery link emailed to the contact email on file.
+// Always shows the same message (no account enumeration). Needs Supabase + Resend.
+export async function requestPasswordReset(formData: FormData) {
+  const username = String(formData.get("username") ?? "").trim().toLowerCase();
+  const done = "/forgot-password?ok=If%20an%20account%20with%20a%20contact%20email%20exists%2C%20a%20reset%20link%20is%20on%20its%20way.";
+  if (!username) redirect("/forgot-password?error=Enter%20your%20username.");
+  if (!envConfigured()) redirect("/forgot-password?error=Password%20reset%20needs%20Supabase%20%2B%20Resend.%20Ask%20your%20admin.");
+  try {
+    const admin = createAdminClient();
+    const { data: prof } = await admin.from("profiles").select("email").eq("username", username).single();
+    const contact = (prof as { email?: string | null } | null)?.email;
+    if (contact) {
+      const { data: link } = await admin.auth.admin.generateLink({ type: "recovery", email: toEmail(username) });
+      const action = link.properties?.action_link;
+      const token = action ? (new URL(action).searchParams.get("token_hash") ?? new URL(action).searchParams.get("token")) : null;
+      if (token) {
+        const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+        const t = mailTemplates.passwordReset(`${base}/reset-password?email=${encodeURIComponent(toEmail(username))}&token=${encodeURIComponent(token)}`);
+        await sendEmail(contact, t.subject, t.html);
+      }
+    }
+  } catch { /* generic message either way */ }
+  redirect(done);
+}
+
+// Reset page: verify the emailed token, then set the new password.
+export async function confirmPasswordReset(formData: FormData) {
+  const parsed = z.object({
+    email: z.string().min(1), token: z.string().min(1),
+    password: z.string().min(8).max(100), confirm: z.string(),
+  }).safeParse({
+    email: formData.get("email"), token: formData.get("token"),
+    password: formData.get("password"), confirm: formData.get("confirm"),
+  });
+  if (!parsed.success || parsed.data.password !== parsed.data.confirm)
+    redirect("/login?error=Passwords%20must%20match%20(min%208%20chars).");
+  if (!envConfigured()) redirect("/login?error=Server%20not%20configured%20yet.");
+  const supabase = await createClient();
+  const { error: vErr } = await supabase.auth.verifyOtp({
+    email: parsed.data.email, token_hash: parsed.data.token, type: "recovery",
+  });
+  if (vErr) redirect("/login?error=Reset%20link%20expired.%20Request%20a%20new%20one.");
+  const { error: uErr } = await supabase.auth.updateUser({ password: parsed.data.password });
+  if (uErr) redirect(`/login?error=${encodeURIComponent(uErr.message)}`);
+  try {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      await createAdminClient().from("profiles").update({ must_change_password: false }).eq("id", data.user.id);
+    }
+  } catch { /* flag clear best-effort */ }
+  redirect("/login?ok=Password%20set.%20Sign%20in.");
 }

@@ -8,7 +8,8 @@ import { brand } from "@/config/brand";
 import { demoProfile } from "@/lib/auth";
 import { createClient, envConfigured } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { addDemoInboxItem, putDemoBytes } from "@/lib/demoStore";
+import { mailTemplates, sendEmail } from "@/lib/email";
+import { addDemoInboxItem, addDemoNotif, putDemoBytes } from "@/lib/demoStore";
 
 const MAX_FILE = 25 * 1024 * 1024;
 const ALLOWED_EXT = new Set(["pdf", "png", "jpg", "jpeg", "gif", "webp", "xls", "xlsx", "doc", "docx", "csv"]);
@@ -58,6 +59,7 @@ export async function createRequest(formData: FormData) {
       id, client: d.full_name, phone: "—", service, note,
       received: "Just now", username: d.username, files: metas,
     });
+    addDemoNotif("admin", `New ${service} upload from ${d.full_name} (${files.length} file(s)).`);
     revalidatePath("/client/requests");
     revalidatePath("/admin/inbox");
     redirect("/client/requests?ok=Documents%20uploaded.%20Admin%20notified.");
@@ -92,14 +94,14 @@ export async function createRequest(formData: FormData) {
       storage_path: path, mime_type: f.type || null, size_bytes: f.size,
     });
   }
-  // Notify admins + audit log; email arrives in Phase 6. Never fail the upload over these.
+  // Notify admins + audit log + email (best-effort; never fail the upload over these).
   try {
-    const { data: admins } = await admin.from("profiles").select("id").eq("role", "admin").eq("is_active", true);
-    const ids = ((admins ?? []) as { id: string }[]).map((a) => a.id);
-    if (ids.length > 0) {
+    const { data: admins } = await admin.from("profiles").select("id,email").eq("role", "admin").eq("is_active", true);
+    const list = ((admins ?? []) as { id: string; email: string | null }[]);
+    if (list.length > 0) {
       await admin.from("notifications").insert(
-        ids.map((id) => ({
-          user_id: id, request_id: reqId,
+        list.map((a) => ({
+          user_id: a.id, request_id: reqId,
           message: `New ${service} upload from ${me.full_name} (${files.length} file(s))`,
         }))
       );
@@ -108,6 +110,12 @@ export async function createRequest(formData: FormData) {
       actor_id: data.user.id, action: "upload", entity: "requests", entity_id: reqId,
       meta: { service, files: files.length },
     });
+    for (const a of list) {
+      if (a.email) {
+        const t = mailTemplates.newUpload(service, me.full_name ?? "client", files.length);
+        void sendEmail(a.email, t.subject, t.html);
+      }
+    }
   } catch { /* notify/log best-effort */ }
 
   revalidatePath("/client/requests");

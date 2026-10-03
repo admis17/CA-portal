@@ -34,27 +34,6 @@ export const demoEmployees: DemoEmployee[] = [
   { id: "demo-4", username: "amit.verma", full_name: "Amit Verma", is_active: false, open: 0 },
 ];
 
-export type DemoTask = {
-  id: string;
-  service: string;
-  client: string;
-  phone: string;
-  due: string;
-  dueLate?: boolean;
-  status: StatusKey;
-  note: string;
-};
-
-export const demoTasksToday: DemoTask[] = [
-  { id: "t1", service: "GST Return", client: "Sharma Textiles", phone: "+91 98200 12345", due: "Due today", status: "in_progress", note: "GSTR-3B for March" },
-  { id: "t2", service: "ITR Filing", client: "Rahul Mehta", phone: "+91 99870 44556", due: "Overdue by 1 day", dueLate: true, status: "assigned", note: "ITR-2 with capital gains" },
-];
-
-export const demoTasksWeek: DemoTask[] = [
-  { id: "t3", service: "TDS Return", client: "Kavita Rao", phone: "+91 98111 22334", due: "Due Fri", status: "assigned", note: "Q4 24Q filing" },
-  { id: "t4", service: "Bookkeeping", client: "Bansal Traders", phone: "+91 98300 66778", due: "Due Fri", status: "under_review", note: "March ledger reconciliation" },
-];
-
 export type DemoRequest = { id: string; service: string; note: string; status: StatusKey; updated: string };
 
 export const demoClientRequests: DemoRequest[] = [

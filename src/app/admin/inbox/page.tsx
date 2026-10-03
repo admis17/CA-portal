@@ -2,7 +2,9 @@ import { Download, Inbox } from "lucide-react";
 import { Shell } from "@/components/layout/Shell";
 import { requireProfile } from "@/lib/auth";
 import { createClient, envConfigured } from "@/lib/supabase/server";
+import { assignRequest } from "@/lib/actions/tasks";
 import { formatBytes, getDemoInbox, type DemoInboxItem } from "@/lib/demoStore";
+import { demoEmployees } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -51,10 +53,20 @@ function demoInbox(): InboxRow[] {
   }));
 }
 
-export default async function InboxPage() {
+export default async function InboxPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const p = await requireProfile(["admin"]);
+  const sp = await searchParams;
   const demo = !envConfigured();
   const items = demo ? demoInbox() : await realInbox();
+  // Assign-form options: demo usernames, or live active employees.
+  let employees: { id: string; full_name: string }[];
+  if (demo) {
+    employees = demoEmployees.filter((e) => e.is_active).map((e) => ({ id: e.username, full_name: e.full_name }));
+  } else {
+    const supabase = await createClient();
+    const { data } = await supabase.from("profiles").select("id,full_name").eq("role", "employee").eq("is_active", true).order("full_name");
+    employees = ((data ?? []) as { id: string; full_name: string }[]);
+  }
   return (
     <Shell role="admin" fullName={p.full_name} username={p.username} active="/admin/inbox">
       <div className="flex items-center gap-3 mb-1 flex-wrap">
@@ -64,9 +76,11 @@ export default async function InboxPage() {
       </div>
       <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>
         {demo
-          ? "Demo inbox — staff assignment arrives in Phase 3."
-          : "Unassigned client uploads. Staff assignment arrives in Phase 3."}
+          ? "Demo inbox — assigning moves the task to that employee's My Work."
+          : "Unassigned client uploads. Assigning moves the task to that employee's My Work."}
       </p>
+      {sp.error && <p className="pill mb-4" style={{ background: "#FEF2F2", color: "#DC2626" }}><span className="d" />{sp.error}</p>}
+      {sp.ok && <p className="pill mb-4" style={{ background: "#F0FDF4", color: "#16A34A" }}><span className="d" />{sp.ok}</p>}
       {items.length === 0 ? (
         <div className="glass-card p-10 text-center">
           <p className="font-display font-semibold">Inbox zero</p>
@@ -97,6 +111,21 @@ export default async function InboxPage() {
                   </li>
                 ))}
               </ul>
+              <form action={assignRequest} className="grid sm:grid-cols-5 gap-2 mt-4 pt-4" style={{ borderTop: "1px solid var(--line)" }}>
+                <input type="hidden" name="requestId" value={r.id} />
+                <input type="hidden" name="from" value="/admin/inbox" />
+                <select name="employeeId" className="input sm:col-span-2" required defaultValue="">
+                  <option value="" disabled>Assign to…</option>
+                  {employees.map((e) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+                </select>
+                <input name="due" type="date" className="input" required title="Due date" />
+                <select name="priority" className="input" defaultValue="normal" title="Priority">
+                  <option value="low">Low</option>
+                  <option value="normal">Normal</option>
+                  <option value="high">High</option>
+                </select>
+                <button className="btn-primary !h-10" type="submit">Assign</button>
+              </form>
             </div>
           ))}
         </div>

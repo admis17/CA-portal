@@ -4,13 +4,14 @@
 Web portal for a CA firm: clients upload documents, admin assigns to employees, employees update status, admin tracks performance. (PRD: `C:\Users\Adarsh\Downloads\PRD.md`, stack: `TECH_STACK.md`)
 
 ## Current Milestone
-Phase 2 (PRD §12.2): client upload to private storage, admin inbox, signed-URL downloads. DONE + tested. Stopped per instruction — Phase 3 not started.
+All 6 phases DONE + tested in demo mode. Uncommitted (Phases 3–6) — push on request.
 
 ## Current Task
-Phase 2 built, lint+build pass, full demo round-trip tested (upload → inbox → byte-identical download, validation, 403s). UI restyled to floating topbar per instruction.
+Phases 3–6 built, lint+build pass, full demo round-trips tested (assign → notify → status → client live view → complete → admin alert; reassign; comments; mark-read; filters; period metrics; forgot-password demo guard; validation rejections).
 
 ## Current Status
-Phase 2 done, awaiting user review before Phase 3.
+Phases 1–2 pushed to https://github.com/admis17/CA-portal.git (`main`, commit `d05afa1`).
+Phases 3–6 complete locally, tested — pushing now; leftovers recorded under Deferred.
 
 ## Completed (Phase 2)
 - `createRequest` action (`src/lib/actions/requests.ts`): service/note/files validation (25 MB, PDF/img/xls/doc/csv), real branch writes request + storage objects + document rows via service role, notifies admins + audit log (best-effort); demo branch stores bytes + item.
@@ -40,9 +41,9 @@ Demo dataset (`src/lib/demo.ts`): dashboard stats (6/14/32/92%) + activity + wor
 - Nothing (Phase 1 complete).
 
 ## Next Steps
-1. User reviews Phases 1–2 in browser (demo logins on `/login`).
-2. Optional: connect Supabase (migration already covers Phases 1–2 tables/RLS/bucket) and re-test live.
-3. Phase 3: assign action, notifications, employee My Work + Past Tasks.
+1. User reviews all phases in browser (demo logins on `/login`).
+2. Optional: connect Supabase (migrations 001+002 cover everything) and re-test live.
+3. Push Phases 3–6 to GitHub on request; deploy per README.
 
 ## Architecture
 - Server Actions + `redirect(?error|?ok)` query feedback; zero client JS for forms (no RHF yet).
@@ -63,6 +64,17 @@ Demo dataset (`src/lib/demo.ts`): dashboard stats (6/14/32/92%) + activity + wor
 ## Known Issues
 - Authenticated flows (wrong-role bounce, RLS) not yet tested against real Supabase — needs env.
 - `resetEmployeePassword` temp shown via `?temp=` URL (fine for local v1; move to email in Phase 6).
+
+## Deferred / not yet done live (needs Supabase + Resend keys)
+- Live-path verification: `verifyOtp(token_hash)` recovery, FK-named joins
+  (`requests_client_id_fkey`, `requests_assigned_to_fkey`), storage upload +
+  60s signed URLs, RLS with real users per role, `generateLink` recovery email,
+  actual Resend delivery (all code-complete, demo-tested only).
+- Run migration `002_employee_client_read.sql` on Supabase (001 already covers the rest).
+- Recharts skipped (CSS bars instead), react-hook-form skipped (plain forms +
+  server-side zod), manual dark-mode toggle skipped (OS setting respected).
+- Mobile QA on real devices; Vercel custom-domain deploy (guide in README).
+- Demo residue: OS temp dir `ca-portal-demo` persists until Supabase is connected.
 
 ## Failed Approaches
 - `src/middleware.ts` → build warned deprecated; migrated to `src/proxy.ts`.

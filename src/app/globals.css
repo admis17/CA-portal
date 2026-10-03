@@ -101,6 +101,12 @@ label.lbl { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0
 /* Eyebrow section label (stitch mockups) */
 .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
 
+/* Segmented period switch (Teloz pattern, Sovereign tones) */
+.seg { display: inline-flex; padding: 4px; gap: 2px; border-radius: 12px; background: color-mix(in srgb, var(--ink) 5%, transparent); border: 1px solid var(--line); }
+.segbtn { padding: 6px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.segbtn:hover { color: var(--ink); }
+.segbtn.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(28, 25, 23, 0.12); }
+
 /* Floating glass top bar (replaces sidebar) */
 .topbar-float {
   position: sticky; top: 12px; z-index: 30;

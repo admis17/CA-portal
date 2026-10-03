@@ -12,7 +12,7 @@ export async function proxy(request: NextRequest) {
   // Demo mode: no Supabase env -> honour the demo_session cookie only.
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const pub = pathname === "/login" || pathname === "/signup";
+  const pub = pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password" || pathname === "/reset-password";
   const prot =
     pathname.startsWith("/admin") ||
     pathname.startsWith("/employee") ||
@@ -70,5 +70,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/employee/:path*", "/client/:path*", "/account/:path*", "/login", "/signup"],
+  matcher: ["/admin/:path*", "/employee/:path*", "/client/:path*", "/account/:path*", "/login", "/signup", "/forgot-password", "/reset-password"],
 };

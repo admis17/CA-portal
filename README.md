@@ -1,4 +1,4 @@
-# Mehra Associates — CA Task & Client Portal (Phases 1–2)
+# Mehra Associates — CA Task & Client Portal (Phases 1–6 complete)
 
 Foundation + upload/inbox per `PRD.md` + `TECH_STACK.md`: Next.js App Router + TypeScript strict,
 Tailwind, Supabase Auth/Postgres/RLS/Storage, username login via `{username}@portal.internal`.
@@ -50,3 +50,24 @@ uploads/inbox/assignment/status/reports (Phases 2–5).
 
 ## Scripts
 `pnpm dev` · `pnpm build` · `pnpm lint` (typecheck: `pnpm tsc --noEmit`)
+
+## Deploy (Vercel + Supabase)
+1. Push to GitHub; import the repo in Vercel (framework: Next.js).
+2. Supabase: create project in Mumbai (`ap-south-1`), run
+   `supabase/migrations/001_foundation.sql` then `002_employee_client_read.sql`.
+3. Create `client-docs` private bucket is done by migration 001; confirm no public
+   storage policies exist (signed URLs only).
+4. Vercel env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `NEXT_PUBLIC_APP_URL`
+   (set to the production URL — used in password-reset links).
+5. Create the first admin via SQL (Setup step 4), deploy, add a custom domain in
+   Vercel → Settings → Domains.
+6. Mobile QA checklist: topbar pills scroll horizontally; stat grids collapse to
+   2-col; tables scroll inside cards; upload/tables usable at 360px width.
+
+## Still to verify live (code-complete, demo-tested only)
+- [ ] Real login per role + wrong-role bounces against Supabase Auth.
+- [ ] RLS: client/employee denied on others' rows and files.
+- [ ] Storage upload + 60s signed-URL downloads.
+- [ ] Resend delivery: assign / status / upload / complete / password-reset emails.
+- [ ] Forgot-password link expiry + reset flow end to end.

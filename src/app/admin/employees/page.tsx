@@ -44,10 +44,11 @@ export default async function EmployeesPage({ searchParams }: { searchParams: SP
 
       <div className="glass-card p-6 mb-4">
         <h2 className="font-display font-semibold mb-4">Create employee</h2>
-        <form action={createEmployee} className="grid md:grid-cols-4 gap-3 items-end">
+        <form action={createEmployee} className="grid md:grid-cols-5 gap-3 items-end">
           <div><label className="lbl" htmlFor="full_name">Full name</label><input id="full_name" name="full_name" className="input" required minLength={2} /></div>
           <div><label className="lbl" htmlFor="username">Login username</label><input id="username" name="username" className="input" required minLength={3} pattern="[a-zA-Z0-9._-]+" /></div>
           <div><label className="lbl" htmlFor="password">Temp password</label><input id="password" name="password" type="password" className="input" required minLength={8} /></div>
+          <div><label className="lbl" htmlFor="email">Contact email (for alerts)</label><input id="email" name="email" type="email" className="input" placeholder="Optional" /></div>
           <button className="btn-primary" type="submit">Create</button>
         </form>
       </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Briefcase, FileText, Inbox, LayoutDashboard, LogOut, Upload, Users } from "lucide-react";
+import { Bell, Briefcase, ClipboardList, FileText, History, Inbox, LayoutDashboard, LogOut, Upload, Users } from "lucide-react";
 import { brand, type Role } from "@/config/brand";
 import { signOut } from "@/lib/actions/auth";
 
@@ -7,12 +7,19 @@ const nav: Record<Role, { href: string; label: string; Icon: typeof LayoutDashbo
   admin: [
     { href: "/admin/dashboard", label: "Dashboard", Icon: LayoutDashboard },
     { href: "/admin/inbox", label: "Inbox", Icon: Inbox },
+    { href: "/admin/tasks", label: "All Tasks", Icon: ClipboardList },
     { href: "/admin/employees", label: "Employees", Icon: Users },
+    { href: "/admin/alerts", label: "Alerts", Icon: Bell },
   ],
-  employee: [{ href: "/employee/today", label: "My Work", Icon: Briefcase }],
+  employee: [
+    { href: "/employee/today", label: "My Work", Icon: Briefcase },
+    { href: "/employee/past", label: "Past", Icon: History },
+    { href: "/employee/alerts", label: "Alerts", Icon: Bell },
+  ],
   client: [
     { href: "/client/requests", label: "My Requests", Icon: FileText },
     { href: "/client/upload", label: "Upload", Icon: Upload },
+    { href: "/client/alerts", label: "Alerts", Icon: Bell },
   ],
 };
 
